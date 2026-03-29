@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tictacdevsecops
+  namespace: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tictacdevsecops
+  template:
+    metadata:
+      labels:
+        app: tictacdevsecops
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: tictacdevsecops
+          image: ghcr.io/tresor242/tictacdevsecops:latest
+          ports:
+            - containerPort: 80
