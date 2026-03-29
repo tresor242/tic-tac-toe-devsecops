@@ -78,22 +78,22 @@ jobs:
         run: echo "${{ secrets.GHCR_for_DevSecOps }}" | docker login ghcr.io -u tresor242 --password-stdin
 
       - name: Build Docker image
-        run: docker build -t ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }} .
+        run: docker build -t ghcr.io/tresor242/tictacdevsecops:${{ github.sha }} .
 
       - name: Scan image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}
+          image-ref: ghcr.io/tresor242/tictacdevsecops:${{ github.sha }}
           format: table
           exit-code: 0
           severity: HIGH,CRITICAL
 
       - name: Push Docker image
-        run: docker push ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}
+        run: docker push ghcr.io/tresor242/tictacdevsecops:${{ github.sha }}
 
       - name: Update Kubernetes deployment image
         run: |
-          sed -i "s|image: ghcr.io/.*/.*:.*|image: ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}|g" kubernetes/deployment.yaml
+          sed -i "s|image: ghcr.io/.*/.*:.*|image: ghcr.io/tresor242/tictacdevsecops:${{ github.sha }}|g" kubernetes/deployment.yaml
 
       - name: Commit and push updated deployment
         run: |
