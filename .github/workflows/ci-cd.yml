@@ -1,0 +1,103 @@
+name: CI-CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'kubernetes/deployment.yaml'
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run lint
+        run: npm run lint
+
+  build:
+    needs: [test, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build app
+        run: npm run build
+
+  docker:
+    needs: [build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GHCR_for_DevSecOps }}" | docker login ghcr.io -u tresor242 --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }} .
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}
+          format: table
+          exit-code: 0
+          severity: HIGH,CRITICAL
+
+      - name: Push Docker image
+        run: docker push ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}
+
+      - name: Update Kubernetes deployment image
+        run: |
+          sed -i "s|image: ghcr.io/.*/.*:.*|image: ghcr.io/tresor242/tic-tac-toe-devsecops:${{ github.sha }}|g" kubernetes/deployment.yaml
+
+      - name: Commit and push updated deployment
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add kubernetes/deployment.yaml
+          git commit -m "Update Kubernetes deployment with new image tag: ${{ github.sha }} [skip ci]" || echo "No changes"
+          git push
