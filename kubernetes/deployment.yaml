@@ -17,6 +17,6 @@ spec:
         - name: ghcr-secret
       containers:
         - name: tictacdevsecops
-          image: ghcr.io/tresor242/tictacdevsecops:latest
+          image: ghcr.io/tresor242/tictacdevsecops:5d86b20bdd768c39973fdcf4ed42167a8c3b4c4a
           ports:
             - containerPort: 80
